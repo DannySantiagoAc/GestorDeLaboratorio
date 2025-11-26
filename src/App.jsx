@@ -1,49 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
-
-// Importaciones de Firebase (¡Asegúrate de tener estas dependencias en tu proyecto!)
-// Para este entorno, asumimos que están disponibles globalmente o importadas así:
 import { initializeApp } from "firebase/app";
 import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  doc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  Timestamp,
-  setLogLevel
+  getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, Timestamp, setLogLevel 
 } from "firebase/firestore";
 import { 
-  getAuth, 
-  signInAnonymously, 
-  signInWithCustomToken, 
-  onAuthStateChanged 
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged 
 } from "firebase/auth";
 
-// --- Iconos (usando lucide-react, pero aquí como componentes SVG para independencia) ---
-
-const IconClock = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-);
-const IconUsers = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-);
-const IconFlask = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M9 3h6"></path><path d="M12 3v7c0 .6.4 1 1 1h.5c.6 0 1-.4 1-1V3"></path><path d="M12 13H6.09c-.5 0-.9.5-.8 1.1l.9 5.4c.1.5.5.9 1 .9h7.7c.5 0 1-.4 1-.9l.9-5.4c.1-.6-.2-1.1-.8-1.1H12Z"></path></svg>
-);
-const IconPlus = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-);
-const IconTrash = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-);
-const IconCalendar = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-);
+// --- Iconos ---
+const IconClock = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+const IconUsers = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
+const IconFlask = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3h6"></path><path d="M12 3v7c0 .6.4 1 1 1h.5c.6 0 1-.4 1-1V3"></path><path d="M12 13H6.09c-.5 0-.9.5-.8 1.1l.9 5.4c.1.5.5.9 1 .9h7.7c.5 0 1-.4 1-.9l.9-5.4c.1-.6-.2-1.1-.8-1.1H12Z"></path></svg>;
+const IconPlus = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+const IconUnlock = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>;
 
 // --- Configuración de Firebase ---
-// Estas variables DEBEN ser proporcionadas por el entorno de Canvas.
 const firebaseConfig = {
   apiKey: "AIzaSyBCxJZKyjgVBEmiNqTeMRQWxf7Ii08-C40",
   authDomain: "gesto-de-laboratorio.firebaseapp.com",
@@ -52,84 +25,59 @@ const firebaseConfig = {
   messagingSenderId: "289999260378",
   appId: "1:289999260378:web:a7dad71a55a806a7bd33e3",
   measurementId: "G-KTVQHYN4ZY"
-}; 
+};
 const appId = 'laboratorio-fisc-2025';
 
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-setLogLevel('debug');
+setLogLevel('silent'); // Reducir ruido en consola
 
 // --- Componente Principal: App ---
 function App() {
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' o 'manage'
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [userId, setUserId] = useState(null);
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'manage'
+  const [user, setUser] = useState(null); // Usuario autenticado
+  const [authInitialized, setAuthInitialized] = useState(false);
+  
+  // Modal de Login
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Estados de los datos
-  const [groups, setGroups] = useState([]); // Lista de grupos del semestre
-  const [sessions, setSessions] = useState([]); // Sesiones agendadas
+  // Datos
+  const [groups, setGroups] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Efecto para autenticación
+  // Rutas de Firestore (Usamos una ruta global pública para lectura, pero protegida para escritura por UI)
+  // NOTA: En producción, se deben configurar Reglas de Seguridad en Firebase console.
+  const dataPath = `artifacts/${appId}/public/data`; 
+
+  // Efecto de Autenticación
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUserId(user.uid);
-        setIsAuthReady(true);
-      } else {
-        try {
-          const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-          if (token) {
-            await signInWithCustomToken(auth, token);
-          } else {
-            await signInAnonymously(auth);
-          }
-        } catch (authError) {
-          console.error("Error de autenticación:", authError);
-          setError("Error al autenticar. La aplicación no funcionará correctamente.");
-        }
-      }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthInitialized(true);
     });
     return () => unsubscribe();
   }, []);
 
-  // Efecto para cargar datos (Grupos y Sesiones)
+  // Efecto de Datos (Listeners en tiempo real)
   useEffect(() => {
-    if (!isAuthReady || !userId || !db) return;
-
+    // Escuchamos siempre, estemos logueados o no (lectura pública)
     setLoading(true);
-    const paths = {
-      groups: `artifacts/${appId}/users/${userId}/groups`,
-      sessions: `artifacts/${appId}/users/${userId}/sessions`
-    };
-
-    console.log("Escuchando en:", paths.groups);
-    console.log("Escuchando en:", paths.sessions);
-
-    const unsubGroups = onSnapshot(query(collection(db, paths.groups)), (snapshot) => {
-      const groupsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setGroups(groupsData);
-    }, (err) => {
-      console.error("Error al cargar grupos:", err);
-      setError("Error al cargar grupos.");
+    
+    const unsubGroups = onSnapshot(query(collection(db, `${dataPath}/groups`)), (snapshot) => {
+      setGroups(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const unsubSessions = onSnapshot(query(collection(db, paths.sessions)), (snapshot) => {
+    const unsubSessions = onSnapshot(query(collection(db, `${dataPath}/sessions`)), (snapshot) => {
       const sessionsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        // Convertir Timestamps de Firestore a objetos Date de JS
         startTime: doc.data().startTime?.toDate(),
         endTime: doc.data().endTime?.toDate()
       }));
       setSessions(sessionsData);
-      setLoading(false);
-    }, (err) => {
-      console.error("Error al cargar sesiones:", err);
-      setError("Error al cargar sesiones.");
       setLoading(false);
     });
 
@@ -137,533 +85,556 @@ function App() {
       unsubGroups();
       unsubSessions();
     };
-  }, [isAuthReady, userId, db]);
-  
-  // Memoizar cálculos de estado
-  const { currentSessions, upcomingSessions } = useMemo(() => { // Renombrado
+  }, []);
+
+  const { currentSessions, upcomingSessions } = useMemo(() => {
     const now = new Date();
-    const sortedSessions = sessions
-      .filter(s => s.endTime && s.endTime > now) // Solo sesiones futuras o activas
+    const sorted = sessions
+      .filter(s => s.endTime && s.endTime > now)
       .sort((a, b) => a.startTime - b.startTime);
 
-    const currentSessions = sortedSessions.filter(s => s.startTime <= now && s.endTime > now); // Cambiado a filter
-    const upcomingSessions = sortedSessions.filter(s => s.startTime > now);
-    
-    return { currentSessions, upcomingSessions }; // Retorna plural
+    return {
+      currentSessions: sorted.filter(s => s.startTime <= now && s.endTime > now),
+      upcomingSessions: sorted.filter(s => s.startTime > now)
+    };
   }, [sessions]);
 
-  if (error) {
-    return <div className="flex items-center justify-center min-h-screen bg-red-100 text-red-700 p-4">{error}</div>;
-  }
+  // Manejador de Logout
+  const handleLogout = async () => {
+    await signOut(auth);
+    setCurrentView('dashboard'); // Volver al inicio al salir
+  };
 
   return (
-    <div className="bg-gray-100 min-h-screen font-sans antialiased">
-      <Header currentView={currentView} setCurrentView={setCurrentView} />
+    <div className="bg-slate-100 min-h-screen font-sans text-slate-800">
+      <Header 
+        currentView={currentView} 
+        setCurrentView={setCurrentView} 
+        user={user}
+        onLoginClick={() => setShowLoginModal(true)}
+        onLogoutClick={handleLogout}
+      />
       
-      {/* Contenido principal */}
       <main className="p-4 md:p-8 max-w-7xl mx-auto">
-        {!isAuthReady || loading ? (
-          <div className="text-center text-gray-500">Cargando datos...</div>
+        {!authInitialized || loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
         ) : (
           <>
             {currentView === 'dashboard' && (
               <DashboardView
-                currentSessions={currentSessions} // Pasando el array
+                currentSessions={currentSessions}
                 upcomingSessions={upcomingSessions}
+                allSessions={sessions} // Pasamos todas para validar cruces
                 groups={groups}
                 db={db}
-                userId={userId}
-                appId={appId}
+                dataPath={dataPath}
+                user={user} // Pasamos usuario para saber si mostrar botones de admin
+                onOpenLogin={() => setShowLoginModal(true)}
               />
             )}
             {currentView === 'manage' && (
               <ManageGroupsView
                 groups={groups}
                 db={db}
-                userId={userId}
-                appId={appId}
+                dataPath={dataPath}
               />
             )}
           </>
         )}
       </main>
-    </div>
-  );
-}
 
-// --- Componente: Header ---
-function Header({ currentView, setCurrentView }) {
-  const navClass = (viewName) =>
-    `py-2 px-4 rounded-lg font-medium transition-colors ${
-      currentView === viewName
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-600 hover:bg-gray-200'
-    }`;
-
-  return (
-    <header className="bg-white shadow-md">
-      <nav className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-700">
-          Laboratorio de Redes Infraestructura
-        </h1>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setCurrentView('dashboard')}
-            className={navClass('dashboard')}
-          >
-            Panel Principal
-          </button>
-          <button
-            onClick={() => setCurrentView('manage')}
-            className={navClass('manage')}
-          >
-            Gestionar Grupos
-          </button>
-        </div>
-      </nav>
-    </header>
-  );
-}
-
-// --- Componente: DashboardView ---
-function DashboardView({ currentSessions, upcomingSessions, groups, db, userId, appId }) { // Prop renombrada
-  const [showModal, setShowModal] = useState(false);
-
-  // Formateador de tiempo
-  const formatTime = (date) => {
-    if (!date) return 'N/A';
-    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  };
-  
-  const formatDate = (date) => {
-     if (!date) return 'N/A';
-     return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
-  }
-
-  // Encontrar la hora de finalización más tardía de las sesiones actuales
-  const latestEndTime = useMemo(() => {
-    if (!currentSessions || currentSessions.length === 0) {
-      return null;
-    }
-    // Encontrar la fecha (tiempo en ms) más grande
-    const latestTimeMs = Math.max(...currentSessions.map(s => s.endTime.getTime()));
-    return new Date(latestTimeMs);
-  }, [currentSessions]);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Columna Izquierda: Estado Actual */}
-      <div className="lg:col-span-2">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Actualmente en Laboratorio
-          </h2>
-          {currentSessions && currentSessions.length > 0 ? ( // Comprobar si el array tiene elementos
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-2xl font-bold text-red-700">
-                  Ocupado
-                </span>
-                {latestEndTime && (
-                  <span className="text-sm font-medium text-red-600 px-3 py-1 bg-red-100 rounded-full">
-                    Última sesión termina a las {formatTime(latestEndTime)}
-                  </span>
-                )}
-              </div>
-              {/* Lista de sesiones activas */}
-              <div className="space-y-4">
-                {currentSessions.map(session => (
-                  <div key={session.id} className="border-b border-red-100 last:border-b-0 pb-3 last:pb-0">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <IconFlask />
-                      <span className="text-lg text-gray-700">
-                        <span className="font-semibold">Práctica:</span> {session.practiceName}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3 mb-2">
-                      <IconUsers />
-                      <span className="text-lg text-gray-700">
-                        <span className="font-semibold">Grupo:</span> {session.groupName}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <IconUsers className="text-gray-400" />
-                      <span className="text-lg text-gray-700">
-                        <span className="font-semibold">Equipo:</span> {session.teamName}
-                      </span>
-                    </div>
-                     <div className="flex items-center space-x-3 mt-2">
-                      <IconClock className="text-red-400" />
-                      <span className="text-sm font-medium text-gray-600">
-                        (Termina a las {formatTime(session.endTime)})
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-md">
-              <span className="text-2xl font-bold text-green-700">
-                Laboratorio Libre
-              </span>
-              <p className="text-gray-600">No hay sesiones agendadas en este momento.</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Columna Derecha: Agendar y Próximas */}
-      <div className="space-y-6">
-        <button
-          onClick={() => setShowModal(true)}
-          className="w-full flex items-center justify-center bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold shadow-md hover:bg-blue-700 transition-colors"
-        >
-          <IconPlus className="mr-2" />
-          Agendar Nueva Sesión
-        </button>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Próximas Sesiones
-          </h2>
-          {upcomingSessions.length > 0 ? (
-            <ul className="space-y-4">
-              {upcomingSessions.slice(0, 5).map(session => (
-                <li key={session.id} className="border-b border-gray-200 pb-3 last:border-b-0">
-                  <p className="font-semibold text-gray-700">{session.practiceName}</p>
-                  <p className="text-sm text-gray-500">{session.groupName} - {session.teamName}</p>
-                  <p className="text-sm text-blue-600 font-medium capitalize">
-                    {formatDate(session.startTime)} ({formatTime(session.startTime)} - {formatTime(session.endTime)})
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No hay más sesiones agendadas.</p>
-          )}
-        </div>
-      </div>
-
-      {/* Modal para Agendar Sesión */}
-      {showModal && (
-        <ScheduleSessionModal
-          groups={groups}
-          db={db}
-          userId={userId}
-          appId={appId}
-          onClose={() => setShowModal(false)}
+      {/* Modal de Login */}
+      {showLoginModal && (
+        <AuthModal 
+          auth={auth} 
+          onClose={() => setShowLoginModal(false)} 
         />
       )}
     </div>
   );
 }
 
-// --- Componente: ManageGroupsView (Gestión de Grupos) ---
-function ManageGroupsView({ groups, db, userId, appId }) {
+// --- Componente: Header ---
+function Header({ currentView, setCurrentView, user, onLoginClick, onLogoutClick }) {
+  const navBtn = (view, label) => (
+    <button
+      onClick={() => setCurrentView(view)}
+      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+        currentView === view 
+        ? 'bg-blue-600 text-white shadow-md' 
+        : 'text-slate-600 hover:bg-slate-200'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <header className="bg-white shadow-md sticky top-0 z-10">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <div className="bg-blue-600 p-2 rounded-lg text-white">
+            <IconFlask />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-800 leading-tight">
+              Laboratorio de Redes
+            </h1>
+            <p className="text-xs text-slate-500 hidden md:block">Sistema de Gestión de Horarios</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 md:space-x-4">
+          {navBtn('dashboard', 'Panel')}
+          {user && navBtn('manage', 'Grupos')}
+          
+          <div className="border-l pl-4 border-slate-300 ml-2">
+            {user ? (
+              <button 
+                onClick={onLogoutClick}
+                className="flex items-center space-x-1 text-red-600 font-medium text-sm hover:text-red-800"
+              >
+                <IconUnlock /> <span>Salir</span>
+              </button>
+            ) : (
+              <button 
+                onClick={onLoginClick}
+                className="flex items-center space-x-1 text-blue-600 font-medium text-sm hover:text-blue-800 bg-blue-50 px-3 py-2 rounded-md border border-blue-200"
+              >
+                <IconLock /> <span>Admin</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// --- Componente: DashboardView ---
+function DashboardView({ currentSessions, upcomingSessions, allSessions, groups, db, dataPath, user, onOpenLogin }) {
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+  // Lógica para eliminar sesión
+  const handleDeleteSession = async (sessionId) => {
+    if (!window.confirm("¿Seguro que deseas cancelar esta sesión? Se liberará el cupo.")) return;
+    try {
+      await deleteDoc(doc(db, `${dataPath}/sessions`, sessionId));
+    } catch (e) {
+      alert("Error al eliminar");
+    }
+  };
+
+  const SessionCard = ({ session, isActive }) => (
+    <div className={`relative p-4 rounded-lg border ${isActive ? 'bg-white border-l-4 border-l-green-500 shadow-md' : 'bg-slate-50 border-slate-200'}`}>
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="font-bold text-slate-800">{session.practiceName}</h3>
+          <div className="text-sm text-slate-600 mt-1 space-y-1">
+            <p className="flex items-center"><span className="font-semibold mr-1">Grupo:</span> {session.groupName}</p>
+            <p className="flex items-center"><span className="font-semibold mr-1">Equipo:</span> {session.teamName}</p>
+            <p className="flex items-center text-blue-600">
+              <IconClock /> 
+              <span className="ml-1">
+                {session.startTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - {session.endTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+              </span>
+            </p>
+          </div>
+        </div>
+        {user && (
+          <button 
+            onClick={() => handleDeleteSession(session.id)}
+            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors"
+            title="Cancelar Sesión"
+          >
+            <IconTrash />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Columna Izquierda: Estado Actual (8 columnas) */}
+      <div className="lg:col-span-8 space-y-6">
+        {/* Banner de Estado */}
+        <div className={`rounded-xl p-6 text-white shadow-lg ${currentSessions.length > 0 ? 'bg-gradient-to-r from-orange-500 to-red-600' : 'bg-gradient-to-r from-green-500 to-emerald-600'}`}>
+          <h2 className="text-3xl font-bold mb-2">
+            {currentSessions.length > 0 ? `Laboratorio Ocupado (${currentSessions.length} grupos)` : 'Laboratorio Disponible'}
+          </h2>
+          <p className="opacity-90">
+            {currentSessions.length > 0 
+              ? 'Hay prácticas en curso en este momento.' 
+              : 'No hay sesiones activas. El laboratorio está libre para uso.'}
+          </p>
+        </div>
+
+        {/* Lista de Sesiones Activas */}
+        {currentSessions.length > 0 && (
+          <div>
+            <h3 className="text-lg font-bold text-slate-700 mb-3 flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+              En Curso Ahora
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {currentSessions.map(s => <SessionCard key={s.id} session={s} isActive={true} />)}
+            </div>
+          </div>
+        )}
+
+        {/* Lista de Próximas */}
+        <div>
+          <h3 className="text-lg font-bold text-slate-700 mb-3">Próximas Sesiones</h3>
+          {upcomingSessions.length === 0 ? (
+            <div className="text-slate-400 italic bg-white p-8 rounded-lg border border-dashed border-slate-300 text-center">
+              No hay más sesiones programadas para hoy.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingSessions.map(s => <SessionCard key={s.id} session={s} isActive={false} />)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Columna Derecha: Acciones (4 columnas) */}
+      <div className="lg:col-span-4 space-y-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="font-bold text-lg mb-4 text-slate-800">Acciones Rápidas</h3>
+          
+          {user ? (
+            <button
+              onClick={() => setShowScheduleModal(true)}
+              className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold shadow-md transition-all transform hover:-translate-y-0.5"
+            >
+              <div className="bg-white/20 p-1 rounded-md mr-3"><IconPlus /></div>
+              Agendar Sesión
+            </button>
+          ) : (
+            <div className="text-center p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <p className="text-slate-600 mb-3 text-sm">Necesitas permisos de administrador para agendar o gestionar el laboratorio.</p>
+              <button 
+                onClick={onOpenLogin}
+                className="text-blue-600 font-semibold text-sm hover:underline"
+              >
+                Iniciar Sesión como Admin
+              </button>
+            </div>
+          )}
+
+          <div className="mt-6 pt-6 border-t border-slate-100">
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Reglas del Laboratorio</h4>
+            <ul className="text-sm text-slate-600 space-y-2">
+              <li className="flex items-start"><span className="mr-2 text-blue-500">•</span> Máximo 4 grupos simultáneos.</li>
+              <li className="flex items-start"><span className="mr-2 text-blue-500">•</span> Duración máxima: 3 horas por sesión.</li>
+              <li className="flex items-start"><span className="mr-2 text-blue-500">•</span> Cancelar con anticipación si no se usará.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {showScheduleModal && (
+        <ScheduleSessionModal
+          groups={groups}
+          allSessions={allSessions} // Necesario para validar choques
+          db={db}
+          dataPath={dataPath}
+          onClose={() => setShowScheduleModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// --- Componente: ManageGroupsView ---
+function ManageGroupsView({ groups, db, dataPath }) {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupLeader, setNewGroupLeader] = useState('');
   const [newGroupMembers, setNewGroupMembers] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const groupsPath = `artifacts/${appId}/users/${userId}/groups`;
-
-  const handleAddGroup = async (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    if (!newGroupName.trim() || !newGroupLeader.trim() || !newGroupMembers.trim()) {
-      setError("El nombre, líder e integrantes son obligatorios.");
-      return;
-    }
-    setError('');
+    if(!newGroupName || !newGroupLeader) return;
+    
     setLoading(true);
+    const members = newGroupMembers.split(',').map(m => m.trim()).filter(m => m);
+    if (!members.includes(newGroupLeader)) members.unshift(newGroupLeader);
 
-    const leaderName = newGroupLeader.trim();
-    const membersArray = newGroupMembers
-      .split(',')
-      .map(m => m.trim()) // Limpia espacios
-      .filter(m => m.length > 0); // Elimina entradas vacías
-
-    // Asegurarse que el líder esté en la lista de miembros
-    if (leaderName && !membersArray.includes(leaderName)) {
-      membersArray.unshift(leaderName); // Agrega al inicio
-    }
-
-    try {
-      await addDoc(collection(db, groupsPath), {
-        name: newGroupName,
-        leader: leaderName,
-        members: membersArray
-      });
-      setNewGroupName('');
-      setNewGroupLeader('');
-      setNewGroupMembers('');
-    } catch (err) {
-      console.error("Error al agregar grupo:", err);
-      setError("No se pudo agregar el grupo.");
-    }
+    await addDoc(collection(db, `${dataPath}/groups`), {
+      name: newGroupName,
+      leader: newGroupLeader,
+      members: members
+    });
+    setNewGroupName(''); setNewGroupLeader(''); setNewGroupMembers('');
     setLoading(false);
   };
 
-  const handleDeleteGroup = async (groupId) => {
-    if (!window.confirm("¿Estás seguro de que quieres eliminar este grupo?")) {
-      return;
-    }
-    try {
-      await deleteDoc(doc(db, groupsPath, groupId));
-    } catch (err) {
-      console.error("Error al eliminar grupo:", err);
-      setError("No se pudo eliminar el grupo.");
+  const handleDelete = async (id) => {
+    if(window.confirm("¿Eliminar grupo permanentemente?")) {
+      await deleteDoc(doc(db, `${dataPath}/groups`, id));
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Formulario para agregar grupo */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Agregar Nuevo Grupo
-        </h2>
-        <form onSubmit={handleAddGroup} className="space-y-4">
+    <div className="grid md:grid-cols-2 gap-6">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit">
+        <h2 className="text-lg font-bold mb-4">Registrar Nuevo Grupo</h2>
+        <form onSubmit={handleAdd} className="space-y-4">
           <div>
-            <label htmlFor="groupName" className="block text-sm font-medium text-gray-700">
-              Nombre del Grupo (ej. "Grupo 301")
-            </label>
-            <input
-              type="text"
-              id="groupName"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              placeholder="Física 101"
+            <label className="block text-sm font-medium text-slate-700">Nombre del Grupo</label>
+            <input 
+              className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none" 
+              placeholder="Ej. Redes II - 401"
+              value={newGroupName} onChange={e => setNewGroupName(e.target.value)}
             />
           </div>
           <div>
-            <label htmlFor="leader" className="block text-sm font-medium text-gray-700">
-              Líder de Grupo
-            </label>
-            <input
-              type="text"
-              id="leader"
-              value={newGroupLeader}
-              onChange={(e) => setNewGroupLeader(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              placeholder="Ana Méndez"
+            <label className="block text-sm font-medium text-slate-700">Líder del Grupo</label>
+            <input 
+              className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Nombre del estudiante responsable"
+              value={newGroupLeader} onChange={e => setNewGroupLeader(e.target.value)}
             />
           </div>
           <div>
-            <label htmlFor="members" className="block text-sm font-medium text-gray-700">
-              Integrantes (separados por coma)
-            </label>
-            <textarea
-              id="members"
-              value={newGroupMembers}
-              onChange={(e) => setNewGroupMembers(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              placeholder="Ana Méndez, Juan Pérez, María López"
+            <label className="block text-sm font-medium text-slate-700">Integrantes (separar por comas)</label>
+            <textarea 
+              className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
               rows="3"
+              placeholder="Juan, Maria, Pedro..."
+              value={newGroupMembers} onChange={e => setNewGroupMembers(e.target.value)}
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-          >
-            {loading ? "Agregando..." : "Agregar Grupo"}
+          <button disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-slate-300">
+            {loading ? 'Guardando...' : 'Guardar Grupo'}
           </button>
         </form>
       </div>
 
-      {/* Lista de grupos existentes */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Grupos Actuales
-        </h2>
-        {groups.length > 0 ? (
-          <ul className="space-y-3">
-            {groups.map(group => (
-              <li key={group.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-md">
-                <div>
-                  <p className="font-medium text-gray-800">{group.name}</p>
-                  <p className="text-sm text-gray-600 font-medium">Líder: {group.leader || 'N/A'}</p>
-                  <p className="text-sm text-gray-500">
-                    Integrantes: {group.members ? group.members.join(', ') : 'N/A'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDeleteGroup(group.id)}
-                  className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
-                  title="Eliminar grupo"
-                >
-                  <IconTrash />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500">No hay grupos registrados. Agrega uno para empezar.</p>
-        )}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-slate-700">Grupos Registrados ({groups.length})</h2>
+        {groups.map(g => (
+          <div key={g.id} className="bg-white p-4 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm">
+            <div>
+              <h3 className="font-bold text-slate-800">{g.name}</h3>
+              <p className="text-sm text-slate-500">Líder: {g.leader}</p>
+              <p className="text-xs text-slate-400 mt-1 truncate max-w-xs">{g.members?.join(', ')}</p>
+            </div>
+            <button onClick={() => handleDelete(g.id)} className="text-slate-400 hover:text-red-500 p-2">
+              <IconTrash />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// --- Componente: ScheduleSessionModal (Modal para Agendar) ---
-function ScheduleSessionModal({ groups, db, userId, appId, onClose }) {
-  const [groupId, setGroupId] = useState(groups[0]?.id || '');
-  const [teamName, setTeamName] = useState('');
-  const [practiceName, setPracticeName] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+// --- Modal de Agendar (Con lógica de validación) ---
+function ScheduleSessionModal({ groups, allSessions, db, dataPath, onClose }) {
+  const [formData, setFormData] = useState({
+    groupId: '', teamName: '', practiceName: '', startTime: '', endTime: ''
+  });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const sessionsPath = `artifacts/${appId}/users/${userId}/sessions`;
+  // Inicializar fechas
+  useEffect(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    const startStr = now.toISOString().slice(0, 16);
+    
+    const end = new Date(now);
+    end.setHours(end.getHours() + 2); // Default 2 horas
+    const endStr = end.toISOString().slice(0, 16);
+
+    setFormData(prev => ({ ...prev, startTime: startStr, endTime: endStr }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!groupId || !teamName || !practiceName || !startTime || !endTime) {
-      setError("Todos los campos son obligatorios.");
-      return;
-    }
-
-    const startDate = new Date(startTime);
-    const endDate = new Date(endTime);
-
-    if (endDate <= startDate) {
-      setError("La hora de fin debe ser posterior a la hora de inicio.");
-      return;
-    }
-    
     setError('');
-    setLoading(true);
     
-    const selectedGroup = groups.find(g => g.id === groupId);
+    // Validaciones básicas
+    if (!formData.groupId || !formData.practiceName) return setError("Faltan datos obligatorios.");
+    
+    const start = new Date(formData.startTime);
+    const end = new Date(formData.endTime);
 
+    if (end <= start) return setError("La hora fin debe ser después del inicio.");
+
+    // VALIDACIÓN 1: Duración Máxima (3 Horas)
+    const durationMs = end - start;
+    const durationHours = durationMs / (1000 * 60 * 60);
+    if (durationHours > 3) {
+      return setError("🚫 La sesión no puede durar más de 3 horas. Permitamos que otros grupos usen el lab.");
+    }
+
+    // VALIDACIÓN 2: Cupos (Máximo 4 sesiones simultáneas)
+    // Filtramos sesiones que chocan con el horario propuesto
+    const overlapping = allSessions.filter(s => {
+      const sStart = s.startTime;
+      const sEnd = s.endTime;
+      // Fórmula de colisión de rangos: (InicioA < FinB) y (FinA > InicioB)
+      return sStart < end && sEnd > start;
+    });
+
+    if (overlapping.length >= 4) {
+      return setError(`🚫 No hay cupo. Ya hay 4 grupos agendados en ese horario.`);
+    }
+
+    setIsSubmitting(true);
     try {
-      await addDoc(collection(db, sessionsPath), {
-        groupId: groupId,
-        groupName: selectedGroup?.name || 'Grupo Desconocido',
-        teamName: teamName,
-        practiceName: practiceName,
-        startTime: Timestamp.fromDate(startDate),
-        endTime: Timestamp.fromDate(endDate),
+      const group = groups.find(g => g.id === formData.groupId);
+      await addDoc(collection(db, `${dataPath}/sessions`), {
+        ...formData,
+        groupName: group?.name || '?',
+        startTime: Timestamp.fromDate(start),
+        endTime: Timestamp.fromDate(end)
       });
-      onClose(); // Cierra el modal al tener éxito
+      onClose();
+    } catch (e) {
+      setError("Error al guardar en base de datos.");
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="bg-blue-600 p-4 flex justify-between items-center text-white">
+          <h2 className="font-bold text-lg">Agendar Práctica</h2>
+          <button onClick={onClose} className="hover:bg-blue-700 p-1 rounded">✕</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">{error}</div>}
+          
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Grupo</label>
+            <select 
+              className="w-full mt-1 p-2 border rounded-md bg-white"
+              value={formData.groupId}
+              onChange={e => setFormData({...formData, groupId: e.target.value})}
+            >
+              <option value="">Seleccionar Grupo...</option>
+              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-semibold text-slate-700">Equipo</label>
+              <input 
+                className="w-full mt-1 p-2 border rounded-md" placeholder="Ej. Equipo Alpha"
+                value={formData.teamName} onChange={e => setFormData({...formData, teamName: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-slate-700">Nombre Práctica</label>
+              <input 
+                className="w-full mt-1 p-2 border rounded-md" placeholder="Ej. VLANs"
+                value={formData.practiceName} onChange={e => setFormData({...formData, practiceName: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <div>
+              <label className="text-xs uppercase font-bold text-slate-500">Inicio</label>
+              <input 
+                type="datetime-local" className="w-full mt-1 p-1 bg-transparent font-medium outline-none"
+                value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase font-bold text-slate-500">Fin (Máx 3h)</label>
+              <input 
+                type="datetime-local" className="w-full mt-1 p-1 bg-transparent font-medium outline-none"
+                value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <button disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold shadow hover:bg-blue-700 disabled:bg-slate-400 mt-2">
+            {isSubmitting ? 'Verificando cupos...' : 'Confirmar Reserva'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- Auth Modal (Login/Registro) ---
+function AuthModal({ auth, onClose }) {
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setError(''); setLoading(true);
+    try {
+      if (isRegister) {
+        await createUserWithEmailAndPassword(auth, email, pass);
+      } else {
+        await signInWithEmailAndPassword(auth, email, pass);
+      }
+      onClose();
     } catch (err) {
-      console.error("Error al agendar sesión:", err);
-      setError("No se pudo agendar la sesión.");
+      console.error(err);
+      setError(isRegister ? "Error al registrar. Verifica el correo o intenta otra contraseña." : "Credenciales incorrectas.");
     }
     setLoading(false);
   };
 
-  // Obtener fecha y hora actual para el input (formato YYYY-MM-DDTHH:MM)
-  const getLocalDateTime = (date = new Date()) => {
-    const offset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date.getTime() - offset)).toISOString().slice(0, 16);
-    return localISOTime;
-  }
-  
-  // Establecer valor por defecto al montar
-  useEffect(() => {
-    setStartTime(getLocalDateTime());
-    
-    const endDate = new Date();
-    endDate.setHours(endDate.getHours() + 2); // Por defecto 2 horas de práctica
-    setEndTime(getLocalDateTime(endDate));
-  }, []);
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Agendar Sesión de Laboratorio</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">&times;</button>
-        </div>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
+        <h2 className="text-2xl font-bold text-center text-slate-800 mb-6">
+          {isRegister ? 'Crear Administrador' : 'Acceso Administrador'}
+        </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleAuth} className="space-y-4">
           <div>
-            <label htmlFor="group" className="block text-sm font-medium text-gray-700">Grupo</label>
-            <select
-              id="group"
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-            >
-              <option value="" disabled>Selecciona un grupo</option>
-              {groups.map(g => (
-                <option key={g.id} value={g.id}>{g.name} (Líder: {g.leader || 'N/A'})</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="team" className="block text-sm font-medium text-gray-700">Nombre del Equipo (ej. "Equipo 1")</label>
-            <input
-              type="text"
-              id="team"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              placeholder="Equipo 1"
+            <label className="block text-sm font-medium text-slate-600">Correo Electrónico</label>
+            <input 
+              type="email" required className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@lab.com"
             />
           </div>
-
           <div>
-            <label htmlFor="practice" className="block text-sm font-medium text-gray-700">Nombre de la Práctica</label>
-            <input
-              type="text"
-              id="practice"
-              value={practiceName}
-              onChange={(e) => setPracticeName(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              placeholder="Práctica 3: Titulación"
+            <label className="block text-sm font-medium text-slate-600">Contraseña</label>
+            <input 
+              type="password" required className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••"
             />
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Inicio</label>
-              <input
-                type="datetime-local"
-                id="startTime"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              />
-            </div>
-             <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">Fin</label>
-              <input
-                type="datetime-local"
-                id="endTime"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              />
-            </div>
-          </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</p>}
           
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-            >
-              {loading ? "Agendando..." : "Agendar"}
-            </button>
-          </div>
+          <button disabled={loading} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition-colors">
+            {loading ? 'Procesando...' : (isRegister ? 'Registrar' : 'Entrar')}
+          </button>
         </form>
+
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => { setIsRegister(!isRegister); setError(''); }}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            {isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿Primer uso? Crea una cuenta de admin'}
+          </button>
+          <div className="mt-4">
+            <button onClick={onClose} className="text-xs text-slate-400 hover:text-slate-600">Cancelar</button>
+          </div>
+        </div>
       </div>
     </div>
   );
