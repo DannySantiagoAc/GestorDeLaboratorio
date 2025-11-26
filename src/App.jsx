@@ -171,7 +171,7 @@ function App() {
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-6 text-center text-sm">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-          <p>© 2024 Universidad Central del Ecuador - Ingeniería en Redes</p>
+          <p>© 2025 Universidad Central del Ecuador - Ingeniería y Ciencias Aplicadas</p>
           <p className="mt-2 md:mt-0">Desarrollado para gestión académica.</p>
         </div>
       </footer>
